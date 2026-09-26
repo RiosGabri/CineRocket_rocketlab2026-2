@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { listMovies } from "../api/movies";
 import type { MovieListItem } from "../types/movies";
+import { normalizeTitle } from "../utils/text";
+import { translateGenre } from "../constants/genreLabels";
+import "./MoviesList.css";
 
 const PAGE_SIZE = 20;
 
@@ -14,7 +17,6 @@ export function MoviesList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // debounce: só atualiza `titulo` (que dispara a busca) 400ms depois de parar de digitar
   useEffect(() => {
     const timeout = setTimeout(() => {
       setTitulo(searchInput);
@@ -37,9 +39,10 @@ export function MoviesList() {
   }, [page, titulo]);
 
   return (
-    <div>
+    <div className="movies-page">
       <input
         type="text"
+        className="search-input"
         placeholder="Buscar por título..."
         value={searchInput}
         onChange={(e) => setSearchInput(e.target.value)}
@@ -50,32 +53,53 @@ export function MoviesList() {
 
       {!loading && !error && (
         <>
-          <p>{total} filme(s) encontrado(s)</p>
-          <ul>
+          <p className="results-count">{total} filme(s) encontrado(s)</p>
+          <div className="movies-grid">
             {items.map((movie) => (
-              <li key={movie.sk_movie_id}>
-                {movie.url_poster && (
-                  <img src={movie.url_poster} alt={movie.titulo} width={80} />
-                )}
-                <strong>{movie.titulo}</strong> ({movie.ano_lancamento ?? "—"})
-                <div>{movie.generos.join(", ") || "Sem gênero"}</div>
-                <div>
-                  {movie.nota_media != null
-                    ? `${movie.nota_media.toFixed(1)}/10`
-                    : "Sem avaliações"}{" "}
-                  ({movie.qtd_avaliacoes})
+              <div className="movie-card" key={movie.sk_movie_id}>
+                <div className="movie-poster">
+                  {movie.url_poster ? (
+                    <img src={movie.url_poster} alt={movie.titulo} />
+                  ) : (
+                    <div className="movie-poster-placeholder">Sem imagem</div>
+                  )}
                 </div>
-              </li>
+                <div className="movie-info">
+                  <h3>{normalizeTitle(movie.titulo)}</h3>
+                  <span className="movie-year">{movie.ano_lancamento ?? "—"}</span>
+                  <div className="movie-genres">
+                    {movie.generos.length > 0
+                      ? movie.generos.map(translateGenre).join(", ")
+                      : "Sem gênero"}
+                  </div>
+                  <div className="movie-rating">
+                    {movie.nota_media != null
+                      ? `${movie.nota_media.toFixed(1)}/10`
+                      : "Sem avaliações"}{" "}
+                    <span className="movie-rating-count">
+                      ({movie.qtd_avaliacoes})
+                    </span>
+                  </div>
+                </div>
+              </div>
             ))}
-          </ul>
+          </div>
 
-          <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-            Anterior
-          </button>
-          <span> Página {page} de {pages} </span>
-          <button disabled={page >= pages} onClick={() => setPage((p) => p + 1)}>
-            Próxima
-          </button>
+          <div className="pagination">
+            <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+              Anterior
+            </button>
+            <span>
+              {" "}
+              Página {page} de {pages}{" "}
+            </span>
+            <button
+              disabled={page >= pages}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              Próxima
+            </button>
+          </div>
         </>
       )}
     </div>
