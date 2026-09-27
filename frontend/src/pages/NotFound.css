@@ -1,0 +1,15 @@
+.not-found-page {
+  max-width: 500px;
+  margin: 4rem auto;
+  text-align: center;
+  color: #f0f0f0;
+}
+
+.not-found-page a {
+  color: #6cb4ff;
+}
+
+.not-found-page h1 {
+  line-height: 1.3;
+  margin-bottom: 0.5rem;
+}

@@ -6,6 +6,7 @@ import { normalizeTitle } from "../utils/text";
 import { translateGenre } from "../constants/genreLabels";
 import { ExpandableList } from "../components/ExpandableList";
 import { ReviewForm } from "../components/ReviewForm";
+import { PosterImage } from "../components/PosterImage";
 import "./MovieDetail.css";
 
 const REVIEWS_PAGE_SIZE = 10;
@@ -88,11 +89,7 @@ export function MovieDetail() {
 
       <div className="detail-header">
         <div className="detail-poster">
-          {movie.url_poster ? (
-            <img src={movie.url_poster} alt={movie.titulo} />
-          ) : (
-            <div className="movie-poster-placeholder">Sem imagem</div>
-          )}
+            <PosterImage src={movie.url_poster} alt={movie.titulo} />
         </div>
 
         <div className="detail-info">

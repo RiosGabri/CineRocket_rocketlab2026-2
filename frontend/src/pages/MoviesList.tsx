@@ -4,6 +4,7 @@ import { listMovies } from "../api/movies";
 import type { MovieListItem } from "../types/movies";
 import { normalizeTitle } from "../utils/text";
 import { translateGenre } from "../constants/genreLabels";
+import { PosterImage } from "../components/PosterImage";
 import "./MoviesList.css";
 
 const PAGE_SIZE = 20;
@@ -68,11 +69,7 @@ export function MoviesList() {
                 key={movie.sk_movie_id}
               >
                 <div className="movie-poster">
-                  {movie.url_poster ? (
-                    <img src={movie.url_poster} alt={movie.titulo} />
-                  ) : (
-                    <div className="movie-poster-placeholder">Sem imagem</div>
-                  )}
+                  <PosterImage src={movie.url_poster} alt={movie.titulo} />
                 </div>
                 <div className="movie-info">
                   <h3>{normalizeTitle(movie.titulo)}</h3>

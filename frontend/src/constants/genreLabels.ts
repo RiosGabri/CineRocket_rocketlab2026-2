@@ -14,12 +14,12 @@ export const GENRE_LABELS: Record<string, string> = {
   Mystery: "Mistério",
   Romance: "Romance",
   "Science Fiction": "Ficção Científica",
-  "TV Movie": "Filme para TV",
+  "Tv Movie": "Filme para TV",
   Thriller: "Suspense",
   War: "Guerra",
   Western: "Faroeste",
 };
 
 export function translateGenre(nome: string): string {
-  return GENRE_LABELS[nome] ?? nome; 
+  return GENRE_LABELS[nome] ?? nome;
 }

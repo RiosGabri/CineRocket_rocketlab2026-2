@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { MoviesList } from "./pages/MoviesList";
 import { MovieDetail } from "./pages/MovieDetail";
 import { MovieForm } from "./pages/MovieForm";
+import { NotFound } from "./pages/NotFound";
 import "./index.css";
 
 createRoot(document.getElementById("root")!).render(
@@ -14,6 +15,7 @@ createRoot(document.getElementById("root")!).render(
         <Route path="/movies/new" element={<MovieForm />} />
         <Route path="/movies/:id/edit" element={<MovieForm />} />
         <Route path="/movies/:id" element={<MovieDetail />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>,

@@ -48,7 +48,7 @@ export function MovieForm() {
         setUrlPoster(movie.url_poster ?? "");
         setMovieGenreNames(movie.generos);
         setDataLancamento(movie.data_lancamento);
-        setDuracaoMinutos(movie.duracao_minutos);
+        setDuracaoMinutos(movie.duracao_minutos && movie.duracao_minutos > 0 ? movie.duracao_minutos : null);
         setStatusFilme(movie.status_filme);
         setUrlBackdrop(movie.url_backdrop);
       })
