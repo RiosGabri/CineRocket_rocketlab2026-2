@@ -185,3 +185,42 @@
   font-size: 0.85rem;
   margin: 0;
 }
+
+.detail-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.detail-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.edit-button,
+.delete-button {
+  padding: 0.4rem 0.9rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  cursor: pointer;
+  border: none;
+  text-decoration: none;
+}
+
+.edit-button {
+  background: #444;
+  color: #f0f0f0;
+}
+
+.delete-button {
+  background: #b33;
+  color: #fff;
+}
+
+.delete-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

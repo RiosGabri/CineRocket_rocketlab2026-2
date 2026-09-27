@@ -51,3 +51,15 @@ export async function createMovie(payload: MovieCreate): Promise<MovieDetail> {
   const response = await apiClient.post<MovieDetail>("/movies", payload);
   return response.data;
 }
+
+export async function updateMovie(
+  id: string,
+  payload: MovieCreate,
+): Promise<MovieDetail> {
+  const response = await apiClient.put<MovieDetail>(`/movies/${id}`, payload);
+  return response.data;
+}
+
+export async function deleteMovie(id: string): Promise<void> {
+  await apiClient.delete(`/movies/${id}`);
+}

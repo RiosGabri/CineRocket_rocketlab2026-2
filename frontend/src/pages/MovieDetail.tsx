@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { getMovieDetail, listMovieReviews } from "../api/movies";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { deleteMovie, getMovieDetail, listMovieReviews } from "../api/movies";
 import type { MovieDetail as MovieDetailType, MovieReviewOut } from "../types/movies";
 import { normalizeTitle } from "../utils/text";
 import { translateGenre } from "../constants/genreLabels";
@@ -12,10 +12,12 @@ const REVIEWS_PAGE_SIZE = 10;
 
 export function MovieDetail() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
 
   const [movie, setMovie] = useState<MovieDetailType | null>(null);
   const [movieLoading, setMovieLoading] = useState(true);
   const [movieError, setMovieError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const [reviews, setReviews] = useState<MovieReviewOut[]>([]);
   const [reviewsPage, setReviewsPage] = useState(1);
@@ -49,9 +51,24 @@ export function MovieDetail() {
 
   function handleReviewAdded() {
     if (!id) return;
-    setReviewsPage(1); // review nova aparece primeiro (created_at desc)
+    setReviewsPage(1);
     fetchReviews(id, 1);
-    getMovieDetail(id).then(setMovie); // atualiza nota_media_usuarios/qtd
+    getMovieDetail(id).then(setMovie);
+  }
+
+  async function handleDelete() {
+    if (!id) return;
+    if (!window.confirm("Tem certeza que deseja excluir este filme? Essa ação não pode ser desfeita."))
+      return;
+
+    setDeleting(true);
+    try {
+      await deleteMovie(id);
+      navigate("/");
+    } catch {
+      setDeleting(false);
+      alert("Não foi possível excluir o filme. Tente novamente.");
+    }
   }
 
   if (movieLoading) return <p className="detail-status">Carregando...</p>;
@@ -79,7 +96,23 @@ export function MovieDetail() {
         </div>
 
         <div className="detail-info">
-          <h1>{normalizeTitle(movie.titulo)}</h1>
+          <div className="detail-title-row">
+            <h1>{normalizeTitle(movie.titulo)}</h1>
+            <div className="detail-actions">
+              <Link to={`/movies/${movie.sk_movie_id}/edit`} className="edit-button">
+                Editar
+              </Link>
+              <button
+                type="button"
+                className="delete-button"
+                onClick={handleDelete}
+                disabled={deleting}
+              >
+                {deleting ? "Excluindo..." : "Excluir"}
+              </button>
+            </div>
+          </div>
+
           <p className="detail-meta">
             {movie.ano_lancamento ?? "—"}
             {movie.duracao_minutos ? ` · ${movie.duracao_minutos} min` : ""}

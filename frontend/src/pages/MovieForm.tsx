@@ -1,15 +1,18 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
-import { createMovie } from "../api/movies";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { createMovie, getMovieDetail, updateMovie } from "../api/movies";
 import { listGenres } from "../api/genres";
 import type { GenreOut } from "../types/movies";
 import "./MovieForm.css";
 
 export function MovieForm() {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const isEditMode = Boolean(id);
 
   const [genres, setGenres] = useState<GenreOut[]>([]);
   const [genresLoading, setGenresLoading] = useState(true);
+  const [movieLoading, setMovieLoading] = useState(isEditMode);
 
   const [titulo, setTitulo] = useState("");
   const [anoLancamento, setAnoLancamento] = useState("");
@@ -17,6 +20,12 @@ export function MovieForm() {
   const [diretor, setDiretor] = useState("");
   const [urlPoster, setUrlPoster] = useState("");
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+  const [movieGenreNames, setMovieGenreNames] = useState<string[]>([]);
+
+  const [dataLancamento, setDataLancamento] = useState<string | null>(null);
+  const [duracaoMinutos, setDuracaoMinutos] = useState<number | null>(null);
+  const [statusFilme, setStatusFilme] = useState<string | null>(null);
+  const [urlBackdrop, setUrlBackdrop] = useState<string | null>(null);
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,9 +36,37 @@ export function MovieForm() {
       .finally(() => setGenresLoading(false));
   }, []);
 
-  function toggleGenre(id: string) {
+  useEffect(() => {
+    if (!id) return;
+    setMovieLoading(true);
+    getMovieDetail(id)
+      .then((movie) => {
+        setTitulo(movie.titulo);
+        setAnoLancamento(String(movie.ano_lancamento ?? ""));
+        setSinopse(movie.sinopse ?? "");
+        setDiretor(movie.diretores[0] ?? "");
+        setUrlPoster(movie.url_poster ?? "");
+        setMovieGenreNames(movie.generos);
+        setDataLancamento(movie.data_lancamento);
+        setDuracaoMinutos(movie.duracao_minutos);
+        setStatusFilme(movie.status_filme);
+        setUrlBackdrop(movie.url_backdrop);
+      })
+      .catch(() => setError("Não foi possível carregar o filme para edição."))
+      .finally(() => setMovieLoading(false));
+  }, [id]);
+
+  useEffect(() => {
+    if (movieGenreNames.length === 0 || genres.length === 0) return;
+    const ids = genres
+      .filter((g) => movieGenreNames.includes(g.nome_genero))
+      .map((g) => g.sk_genre_id);
+    setSelectedGenres(ids);
+  }, [movieGenreNames, genres]);
+
+  function toggleGenre(genreId: string) {
     setSelectedGenres((prev) =>
-      prev.includes(id) ? prev.filter((g) => g !== id) : [...prev, id],
+      prev.includes(genreId) ? prev.filter((g) => g !== genreId) : [...prev, genreId],
     );
   }
 
@@ -58,25 +95,44 @@ export function MovieForm() {
     setSubmitting(true);
     setError(null);
     try {
-      const movie = await createMovie({
+      const payload = {
         titulo: titulo.trim(),
         ano_lancamento: Number(anoLancamento),
         sinopse: sinopse.trim() || null,
         diretor: diretor.trim() || null,
         url_poster: urlPoster.trim() || null,
         generos: selectedGenres,
-      });
+        data_lancamento: dataLancamento,
+        duracao_minutos: duracaoMinutos,
+        status_filme: statusFilme,
+        url_backdrop: urlBackdrop,
+      };
+
+      const movie = isEditMode
+        ? await updateMovie(id!, payload)
+        : await createMovie(payload);
+
       navigate(`/movies/${movie.sk_movie_id}`);
     } catch {
-      setError("Não foi possível cadastrar o filme. Verifique os dados e tente novamente.");
+      setError(
+        isEditMode
+          ? "Não foi possível salvar as alterações. Verifique os dados e tente novamente."
+          : "Não foi possível cadastrar o filme. Verifique os dados e tente novamente.",
+      );
     } finally {
       setSubmitting(false);
     }
   }
 
+  if (movieLoading) return <p className="movie-form-page">Carregando...</p>;
+
   return (
     <div className="movie-form-page">
-      <h1>Cadastrar filme</h1>
+      <Link to={isEditMode ? `/movies/${id}` : "/"} className="back-link">
+        ← {isEditMode ? "Voltar ao filme" : "Voltar ao catálogo"}
+      </Link>
+
+      <h1>{isEditMode ? "Editar filme" : "Cadastrar filme"}</h1>
 
       <form className="movie-form" onSubmit={handleSubmit}>
         <label>
@@ -152,7 +208,11 @@ export function MovieForm() {
         {error && <p role="alert" className="form-error">{error}</p>}
 
         <button type="submit" disabled={submitting}>
-          {submitting ? "Cadastrando..." : "Cadastrar filme"}
+          {submitting
+            ? "Salvando..."
+            : isEditMode
+              ? "Salvar alterações"
+              : "Cadastrar filme"}
         </button>
       </form>
     </div>
