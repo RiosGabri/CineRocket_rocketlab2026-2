@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { listMovies } from "../api/movies";
 import type { MovieListItem } from "../types/movies";
 import { normalizeTitle } from "../utils/text";
@@ -20,7 +21,7 @@ export function MoviesList() {
   useEffect(() => {
     const timeout = setTimeout(() => {
       setTitulo(searchInput);
-      setPage(1); // toda busca nova volta pra página 1
+      setPage(1);
     }, 400);
     return () => clearTimeout(timeout);
   }, [searchInput]);
@@ -54,9 +55,14 @@ export function MoviesList() {
       {!loading && !error && (
         <>
           <p className="results-count">{total} filme(s) encontrado(s)</p>
+
           <div className="movies-grid">
             {items.map((movie) => (
-              <div className="movie-card" key={movie.sk_movie_id}>
+              <Link
+                to={`/movies/${movie.sk_movie_id}`}
+                className="movie-card"
+                key={movie.sk_movie_id}
+              >
                 <div className="movie-poster">
                   {movie.url_poster ? (
                     <img src={movie.url_poster} alt={movie.titulo} />
@@ -81,7 +87,7 @@ export function MoviesList() {
                     </span>
                   </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
 
