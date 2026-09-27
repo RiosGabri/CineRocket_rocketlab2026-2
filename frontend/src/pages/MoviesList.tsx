@@ -41,6 +41,10 @@ export function MoviesList() {
 
   return (
     <div className="movies-page">
+      <Link to="/movies/new" className="new-movie-link">
+        + Cadastrar filme
+      </Link>
+
       <input
         type="text"
         className="search-input"

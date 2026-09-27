@@ -125,3 +125,14 @@
   opacity: 0.4;
   cursor: not-allowed;
 }
+
+.new-movie-link {
+  display: inline-block;
+  margin-bottom: 1rem;
+  padding: 0.5rem 1rem;
+  background: #6cb4ff;
+  color: #111;
+  text-decoration: none;
+  border-radius: 6px;
+  font-weight: bold;
+}

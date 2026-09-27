@@ -5,6 +5,7 @@ import type {
   PaginatedReviews,
   MovieReviewCreate,
   MovieReviewOut,
+  MovieCreate,
 } from "../types/movies";
 
 export async function listMovies(
@@ -43,5 +44,10 @@ export async function createMovieReview(
     `/movies/${id}/reviews`,
     payload,
   );
+  return response.data;
+}
+
+export async function createMovie(payload: MovieCreate): Promise<MovieDetail> {
+  const response = await apiClient.post<MovieDetail>("/movies", payload);
   return response.data;
 }

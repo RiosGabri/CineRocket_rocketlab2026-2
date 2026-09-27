@@ -68,3 +68,21 @@ export interface MovieReviewCreate {
   nota: number;
   comentario: string;
 }
+
+export interface GenreOut {
+  sk_genre_id: string;
+  nome_genero: string;
+}
+
+export interface MovieCreate {
+  titulo: string;
+  ano_lancamento: number;
+  data_lancamento?: string | null;
+  duracao_minutos?: number | null;
+  status_filme?: string | null;
+  sinopse?: string | null;
+  url_poster?: string | null;
+  url_backdrop?: string | null;
+  diretor?: string | null;
+  generos: string[];
+}
