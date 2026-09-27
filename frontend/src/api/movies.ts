@@ -3,6 +3,8 @@ import type {
   PaginatedMovies,
   MovieDetail,
   PaginatedReviews,
+  MovieReviewCreate,
+  MovieReviewOut,
 } from "../types/movies";
 
 export async function listMovies(
@@ -29,6 +31,17 @@ export async function listMovieReviews(
   const response = await apiClient.get<PaginatedReviews>(
     `/movies/${id}/reviews`,
     { params: { page, page_size: pageSize } },
+  );
+  return response.data;
+}
+
+export async function createMovieReview(
+  id: string,
+  payload: MovieReviewCreate,
+): Promise<MovieReviewOut> {
+  const response = await apiClient.post<MovieReviewOut>(
+    `/movies/${id}/reviews`,
+    payload,
   );
   return response.data;
 }

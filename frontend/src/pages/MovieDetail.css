@@ -135,3 +135,53 @@
 .expand-toggle:hover {
   color: #9bcaff;
 }
+
+.review-form {
+  background: #1e1e1e;
+  border-radius: 8px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.review-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+  color: #ccc;
+}
+
+.review-form input,
+.review-form textarea {
+  padding: 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #444;
+  background: #2a2a2a;
+  color: #f0f0f0;
+  font-family: inherit;
+}
+
+.review-form button {
+  align-self: flex-start;
+  padding: 0.5rem 1.25rem;
+  border-radius: 6px;
+  border: none;
+  background: #6cb4ff;
+  color: #111;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.review-form button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.form-error {
+  color: #ff6b6b;
+  font-size: 0.85rem;
+  margin: 0;
+}

@@ -4,8 +4,9 @@ import { getMovieDetail, listMovieReviews } from "../api/movies";
 import type { MovieDetail as MovieDetailType, MovieReviewOut } from "../types/movies";
 import { normalizeTitle } from "../utils/text";
 import { translateGenre } from "../constants/genreLabels";
-import "./MovieDetail.css";
 import { ExpandableList } from "../components/ExpandableList";
+import { ReviewForm } from "../components/ReviewForm";
+import "./MovieDetail.css";
 
 const REVIEWS_PAGE_SIZE = 10;
 
@@ -31,16 +32,27 @@ export function MovieDetail() {
       .finally(() => setMovieLoading(false));
   }, [id]);
 
-  useEffect(() => {
-    if (!id) return;
+  function fetchReviews(movieId: string, targetPage: number) {
     setReviewsLoading(true);
-    listMovieReviews(id, reviewsPage, REVIEWS_PAGE_SIZE)
+    listMovieReviews(movieId, targetPage, REVIEWS_PAGE_SIZE)
       .then((data) => {
         setReviews(data.items);
         setReviewsPages(data.pages);
       })
       .finally(() => setReviewsLoading(false));
+  }
+
+  useEffect(() => {
+    if (!id) return;
+    fetchReviews(id, reviewsPage);
   }, [id, reviewsPage]);
+
+  function handleReviewAdded() {
+    if (!id) return;
+    setReviewsPage(1); // review nova aparece primeiro (created_at desc)
+    fetchReviews(id, 1);
+    getMovieDetail(id).then(setMovie); // atualiza nota_media_usuarios/qtd
+  }
 
   if (movieLoading) return <p className="detail-status">Carregando...</p>;
   if (movieError || !movie)
@@ -85,8 +97,8 @@ export function MovieDetail() {
               ? `${movie.nota_media_usuarios.toFixed(1)}/10`
               : "Sem avaliações"}{" "}
             <span className="movie-rating-count">
-                ({movie.qtd_avaliacoes_usuarios}{" "}
-                {movie.qtd_avaliacoes_usuarios === 1 ? "avaliação" : "avaliações"})
+              ({movie.qtd_avaliacoes_usuarios}{" "}
+              {movie.qtd_avaliacoes_usuarios === 1 ? "avaliação" : "avaliações"})
             </span>
           </div>
 
@@ -110,6 +122,8 @@ export function MovieDetail() {
 
       <div className="detail-reviews">
         <h2>Avaliações</h2>
+
+        <ReviewForm movieId={id!} onReviewAdded={handleReviewAdded} />
 
         {reviewsLoading && <p>Carregando avaliações...</p>}
 

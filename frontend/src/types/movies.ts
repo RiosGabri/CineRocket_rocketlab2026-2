@@ -62,3 +62,9 @@ export interface PaginatedReviews {
   page_size: number;
   pages: number;
 }
+
+export interface MovieReviewCreate {
+  nome: string;
+  nota: number;
+  comentario: string;
+}
