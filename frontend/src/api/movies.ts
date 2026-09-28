@@ -47,6 +47,25 @@ export async function createMovieReview(
   return response.data;
 }
 
+export async function updateMovieReview(
+  movieId: string,
+  reviewId: string,
+  payload: MovieReviewCreate,
+): Promise<MovieReviewOut> {
+  const response = await apiClient.put<MovieReviewOut>(
+    `/movies/${movieId}/reviews/${reviewId}`,
+    payload,
+  );
+  return response.data;
+}
+
+export async function deleteMovieReview(
+  movieId: string,
+  reviewId: string,
+): Promise<void> {
+  await apiClient.delete(`/movies/${movieId}/reviews/${reviewId}`);
+}
+
 export async function createMovie(payload: MovieCreate): Promise<MovieDetail> {
   const response = await apiClient.post<MovieDetail>("/movies", payload);
   return response.data;

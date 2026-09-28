@@ -246,3 +246,55 @@
     max-width: 220px;
   }
 }
+
+.review-actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.review-action-button {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-input);
+  color: var(--color-text);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.review-action-button:hover:not(:disabled) {
+  background: var(--color-border);
+}
+
+.review-action-danger {
+  color: var(--color-danger);
+}
+
+.review-action-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.review-form-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.review-form .review-cancel-button {
+  background: var(--color-bg-input);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+
+.review-form .review-cancel-button:hover:not(:disabled) {
+  background: var(--color-border);
+}
+
+/* formulário de edição dentro do card: sem caixa dupla */
+.review-card .review-form {
+  background: transparent;
+  padding: 0;
+  margin-bottom: 0;
+}

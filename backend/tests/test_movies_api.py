@@ -1,5 +1,7 @@
 from sqlalchemy.exc import IntegrityError
+
 from app.movies.models import DimGenre
+
 
 async def test_get_movie_not_found(client):
     assert (await client.get("/api/v1/movies/nao-existe")).status_code == 404
@@ -160,3 +162,75 @@ async def test_post_movie_review_success(client, db_session):
     detail = (await client.get(f"/api/v1/movies/{sk_movie_id}")).json()
     assert detail["nota_media_usuarios"] == 8.0
     assert detail["qtd_avaliacoes_usuarios"] == 1
+
+async def _create_movie_and_review(client, genre_id: str, titulo: str, nota: float = 8):
+    created = await client.post(
+        "/api/v1/movies",
+        json={"titulo": titulo, "ano_lancamento": 2020, "generos": [genre_id]},
+    )
+    sk_movie_id = created.json()["sk_movie_id"]
+    review = await client.post(
+        f"/api/v1/movies/{sk_movie_id}/reviews",
+        json={"nome": "Fulano", "nota": nota, "comentario": "Bom"},
+    )
+    return sk_movie_id, review.json()["sk_movie_review_id"]
+
+
+async def test_put_movie_review_success(client, db_session):
+    genre = await _create_genre(db_session)
+    sk_movie_id, review_id = await _create_movie_and_review(client, genre.sk_genre_id, "A")
+
+    response = await client.put(
+        f"/api/v1/movies/{sk_movie_id}/reviews/{review_id}",
+        json={"nome": "Beltrano", "nota": 4, "comentario": "Mudei de ideia"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["nome"] == "Beltrano"
+    assert response.json()["nota"] == 4
+    detail = (await client.get(f"/api/v1/movies/{sk_movie_id}")).json()
+    assert detail["nota_media_usuarios"] == 4.0
+    assert detail["qtd_avaliacoes_usuarios"] == 1
+
+
+async def test_put_movie_review_not_found_returns_404(client, db_session):
+    genre = await _create_genre(db_session)
+    sk_movie_id, _ = await _create_movie_and_review(client, genre.sk_genre_id, "A")
+
+    response = await client.put(
+        f"/api/v1/movies/{sk_movie_id}/reviews/nao-existe",
+        json={"nome": "X", "nota": 5, "comentario": "Y"},
+    )
+    assert response.status_code == 404
+
+
+async def test_put_movie_review_wrong_movie_returns_404(client, db_session):
+    genre = await _create_genre(db_session)
+    _, review_id_a = await _create_movie_and_review(client, genre.sk_genre_id, "A")
+    movie_b, _ = await _create_movie_and_review(client, genre.sk_genre_id, "B")
+
+    response = await client.put(
+        f"/api/v1/movies/{movie_b}/reviews/{review_id_a}",
+        json={"nome": "X", "nota": 5, "comentario": "Y"},
+    )
+    assert response.status_code == 404
+
+
+async def test_delete_movie_review_success(client, db_session):
+    genre = await _create_genre(db_session)
+    sk_movie_id, review_id = await _create_movie_and_review(client, genre.sk_genre_id, "A")
+
+    response = await client.delete(f"/api/v1/movies/{sk_movie_id}/reviews/{review_id}")
+    assert response.status_code == 204
+
+    detail = (await client.get(f"/api/v1/movies/{sk_movie_id}")).json()
+    assert detail["nota_media_usuarios"] is None
+    assert detail["qtd_avaliacoes_usuarios"] == 0
+
+
+async def test_delete_movie_review_not_found_returns_404(client, db_session):
+    genre = await _create_genre(db_session)
+    sk_movie_id, _ = await _create_movie_and_review(client, genre.sk_genre_id, "A")
+
+    response = await client.delete(f"/api/v1/movies/{sk_movie_id}/reviews/nao-existe")
+    assert response.status_code == 404

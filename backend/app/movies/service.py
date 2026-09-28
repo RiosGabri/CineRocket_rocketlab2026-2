@@ -416,3 +416,50 @@ async def delete_movie(db: AsyncSession, sk_movie_id: str) -> bool:
     await db.delete(movie)
     await db.commit()
     return True
+
+async def _get_movie_review(
+    db: AsyncSession, sk_movie_id: str, sk_movie_review_id: str
+) -> MovieReview | None:
+    """Busca a avaliação garantindo que ela pertence ao filme da URL."""
+
+    stmt = select(MovieReview).where(
+        MovieReview.sk_movie_review_id == sk_movie_review_id,
+        MovieReview.sk_movie_id == sk_movie_id,
+    )
+    return (await db.execute(stmt)).scalar_one_or_none()
+
+
+async def update_movie_review(
+    db: AsyncSession,
+    sk_movie_id: str,
+    sk_movie_review_id: str,
+    payload: MovieReviewCreate,
+) -> MovieReviewOut | None:
+    """Atualiza nome, nota e comentário de uma avaliação (created_at não muda).
+
+    Retorna None quando a avaliação não existe ou não pertence ao filme.
+    """
+
+    review = await _get_movie_review(db, sk_movie_id, sk_movie_review_id)
+    if review is None:
+        return None
+
+    review.nome = payload.nome
+    review.nota = payload.nota
+    review.comentario = payload.comentario
+    await db.commit()
+    await db.refresh(review)
+    return MovieReviewOut.model_validate(review)
+
+
+async def delete_movie_review(
+    db: AsyncSession, sk_movie_id: str, sk_movie_review_id: str
+) -> bool:
+    """Remove uma avaliação. Retorna False se não existe ou não pertence ao filme."""
+
+    review = await _get_movie_review(db, sk_movie_id, sk_movie_review_id)
+    if review is None:
+        return False
+    await db.delete(review)
+    await db.commit()
+    return True

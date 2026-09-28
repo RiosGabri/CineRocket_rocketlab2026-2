@@ -1,15 +1,23 @@
 import { useState, type FormEvent } from "react";
-import { createMovieReview } from "../api/movies";
+import { createMovieReview, updateMovieReview } from "../api/movies";
+import type { MovieReviewOut } from "../types/movies";
 
 interface ReviewFormProps {
   movieId: string;
-  onReviewAdded: () => void;
+  review?: MovieReviewOut; // se vier, o formulário está em modo edição
+  onSaved: () => void;
+  onCancel?: () => void;
 }
 
-export function ReviewForm({ movieId, onReviewAdded }: ReviewFormProps) {
-  const [nome, setNome] = useState("");
-  const [nota, setNota] = useState("");
-  const [comentario, setComentario] = useState("");
+export function ReviewForm({ movieId, review, onSaved, onCancel }: ReviewFormProps) {
+  const isEditMode = review !== undefined;
+
+  const [nome, setNome] = useState(review?.nome ?? "");
+  // arredonda para 2 casas: o formulário só aceita até 2 casas decimais
+  const [nota, setNota] = useState(
+    review ? String(Math.round(review.nota * 100) / 100) : "",
+  );
+  const [comentario, setComentario] = useState(review?.comentario ?? "");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,17 +49,27 @@ export function ReviewForm({ movieId, onReviewAdded }: ReviewFormProps) {
     setSubmitting(true);
     setError(null);
     try {
-      await createMovieReview(movieId, {
+      const payload = {
         nome: nome.trim(),
         nota: Number(nota),
         comentario: comentario.trim(),
-      });
-      setNome("");
-      setNota("");
-      setComentario("");
-      onReviewAdded();
+      };
+
+      if (review) {
+        await updateMovieReview(movieId, review.sk_movie_review_id, payload);
+      } else {
+        await createMovieReview(movieId, payload);
+        setNome("");
+        setNota("");
+        setComentario("");
+      }
+      onSaved();
     } catch {
-      setError("Não foi possível enviar a avaliação. Tente novamente.");
+      setError(
+        isEditMode
+          ? "Não foi possível salvar a avaliação. Tente novamente."
+          : "Não foi possível enviar a avaliação. Tente novamente.",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -59,7 +77,7 @@ export function ReviewForm({ movieId, onReviewAdded }: ReviewFormProps) {
 
   return (
     <form className="review-form" onSubmit={handleSubmit}>
-      <h3>Deixe sua avaliação</h3>
+      <h3>{isEditMode ? "Editar avaliação" : "Deixe sua avaliação"}</h3>
 
       <label>
         Nome
@@ -98,9 +116,25 @@ export function ReviewForm({ movieId, onReviewAdded }: ReviewFormProps) {
 
       {error && <p role="alert" className="form-error">{error}</p>}
 
-      <button type="submit" disabled={submitting}>
-        {submitting ? "Enviando..." : "Enviar avaliação"}
-      </button>
+      <div className="review-form-actions">
+        <button type="submit" disabled={submitting}>
+          {submitting
+            ? "Salvando..."
+            : isEditMode
+              ? "Salvar alterações"
+              : "Enviar avaliação"}
+        </button>
+        {onCancel && (
+          <button
+            type="button"
+            className="review-cancel-button"
+            onClick={onCancel}
+            disabled={submitting}
+          >
+            Cancelar
+          </button>
+        )}
+      </div>
     </form>
   );
 }

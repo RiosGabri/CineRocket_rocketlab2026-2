@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { deleteMovie, getMovieDetail, listMovieReviews } from "../api/movies";
+import {
+  deleteMovie,
+  deleteMovieReview,
+  getMovieDetail,
+  listMovieReviews,
+} from "../api/movies";
 import type { MovieDetail as MovieDetailType, MovieReviewOut } from "../types/movies";
 import { normalizeTitle } from "../utils/text";
 import { translateGenre } from "../constants/genreLabels";
@@ -24,6 +29,8 @@ export function MovieDetail() {
   const [reviewsPage, setReviewsPage] = useState(1);
   const [reviewsPages, setReviewsPages] = useState(0);
   const [reviewsLoading, setReviewsLoading] = useState(true);
+  const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
+  const [deletingReviewId, setDeletingReviewId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -39,6 +46,11 @@ export function MovieDetail() {
     setReviewsLoading(true);
     listMovieReviews(movieId, targetPage, REVIEWS_PAGE_SIZE)
       .then((data) => {
+        // excluiu a última avaliação da página atual: volta uma página
+        if (data.items.length === 0 && targetPage > 1) {
+          setReviewsPage(targetPage - 1);
+          return;
+        }
         setReviews(data.items);
         setReviewsPages(data.pages);
       })
@@ -52,9 +64,33 @@ export function MovieDetail() {
 
   function handleReviewAdded() {
     if (!id) return;
-    setReviewsPage(1);
+    setReviewsPage(1); // avaliação nova aparece primeiro (created_at desc)
     fetchReviews(id, 1);
+    getMovieDetail(id).then(setMovie); // atualiza nota_media_usuarios/qtd
+  }
+
+  function handleReviewEdited() {
+    if (!id) return;
+    setEditingReviewId(null);
+    fetchReviews(id, reviewsPage); // fica na mesma página: created_at não muda
     getMovieDetail(id).then(setMovie);
+  }
+
+  async function handleDeleteReview(reviewId: string) {
+    if (!id) return;
+    if (!window.confirm("Excluir esta avaliação? Essa ação não pode ser desfeita."))
+      return;
+
+    setDeletingReviewId(reviewId);
+    try {
+      await deleteMovieReview(id, reviewId);
+      fetchReviews(id, reviewsPage);
+      getMovieDetail(id).then(setMovie);
+    } catch {
+      alert("Não foi possível excluir a avaliação. Tente novamente.");
+    } finally {
+      setDeletingReviewId(null);
+    }
   }
 
   async function handleDelete() {
@@ -89,7 +125,7 @@ export function MovieDetail() {
 
       <div className="detail-header">
         <div className="detail-poster">
-            <PosterImage src={movie.url_poster} alt={movie.titulo} />
+          <PosterImage src={movie.url_poster} alt={movie.titulo} />
         </div>
 
         <div className="detail-info">
@@ -153,7 +189,7 @@ export function MovieDetail() {
       <div className="detail-reviews">
         <h2>Avaliações</h2>
 
-        <ReviewForm movieId={id!} onReviewAdded={handleReviewAdded} />
+        <ReviewForm movieId={id!} onSaved={handleReviewAdded} />
 
         {reviewsLoading && <p>Carregando avaliações...</p>}
 
@@ -162,18 +198,48 @@ export function MovieDetail() {
         )}
 
         {!reviewsLoading &&
-          reviews.map((review) => (
-            <div className="review-card" key={review.sk_movie_review_id}>
-              <div className="review-header">
-                <strong>{review.nome}</strong>
-                <span className="review-rating">{review.nota.toFixed(1)}/10</span>
+          reviews.map((review) =>
+            editingReviewId === review.sk_movie_review_id ? (
+              <div className="review-card" key={review.sk_movie_review_id}>
+                <ReviewForm
+                  movieId={id!}
+                  review={review}
+                  onSaved={handleReviewEdited}
+                  onCancel={() => setEditingReviewId(null)}
+                />
               </div>
-              <p className="review-comment">{review.comentario}</p>
-              <span className="review-date">
-                {new Date(review.created_at).toLocaleDateString("pt-BR")}
-              </span>
-            </div>
-          ))}
+            ) : (
+              <div className="review-card" key={review.sk_movie_review_id}>
+                <div className="review-header">
+                  <strong>{review.nome}</strong>
+                  <span className="review-rating">{review.nota.toFixed(1)}/10</span>
+                </div>
+                <p className="review-comment">{review.comentario}</p>
+                <span className="review-date">
+                  {new Date(review.created_at).toLocaleDateString("pt-BR")}
+                </span>
+                <div className="review-actions">
+                  <button
+                    type="button"
+                    className="review-action-button"
+                    onClick={() => setEditingReviewId(review.sk_movie_review_id)}
+                  >
+                    Editar
+                  </button>
+                  <button
+                    type="button"
+                    className="review-action-button review-action-danger"
+                    onClick={() => handleDeleteReview(review.sk_movie_review_id)}
+                    disabled={deletingReviewId === review.sk_movie_review_id}
+                  >
+                    {deletingReviewId === review.sk_movie_review_id
+                      ? "Excluindo..."
+                      : "Excluir"}
+                  </button>
+                </div>
+              </div>
+            ),
+          )}
 
         {reviewsPages > 1 && (
           <div className="pagination">
