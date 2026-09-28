@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { createMovie, getMovieDetail, updateMovie } from "../api/movies";
 import { listGenres } from "../api/genres";
 import type { GenreOut } from "../types/movies";
+import { translateGenre } from "../constants/genreLabels";
 import "./MovieForm.css";
 
 export function MovieForm() {
@@ -200,7 +201,7 @@ export function MovieForm() {
                   onChange={() => toggleGenre(genre.sk_genre_id)}
                   disabled={submitting}
                 />
-                {genre.nome_genero}
+                {translateGenre(genre.nome_genero)}
               </label>
             ))}
         </fieldset>
