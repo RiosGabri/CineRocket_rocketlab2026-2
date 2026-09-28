@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   deleteMovie,
   deleteMovieReview,
@@ -7,6 +7,7 @@ import {
   listMovieReviews,
 } from "../api/movies";
 import type { MovieDetail as MovieDetailType, MovieReviewOut } from "../types/movies";
+import type { CatalogNavigationState } from "../types/navigation";
 import { normalizeTitle } from "../utils/text";
 import { translateGenre } from "../constants/genreLabels";
 import { ExpandableList } from "../components/ExpandableList";
@@ -19,6 +20,8 @@ const REVIEWS_PAGE_SIZE = 10;
 export function MovieDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const catalogState = location.state as CatalogNavigationState | null;
 
   const [movie, setMovie] = useState<MovieDetailType | null>(null);
   const [movieLoading, setMovieLoading] = useState(true);
@@ -113,13 +116,13 @@ export function MovieDetail() {
     return (
       <div className="detail-status">
         <p role="alert">{movieError ?? "Filme não encontrado."}</p>
-        <Link to="/">Voltar ao catálogo</Link>
+        <Link to="/" state={catalogState}>Voltar ao catálogo</Link>
       </div>
     );
 
   return (
     <div className="movie-detail">
-      <Link to="/" className="back-link">
+      <Link to="/" state={catalogState} className="back-link">
         ← Voltar ao catálogo
       </Link>
 

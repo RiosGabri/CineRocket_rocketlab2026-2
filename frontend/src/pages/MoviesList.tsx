@@ -1,5 +1,5 @@
-import { startTransition, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { startTransition, useEffect, useRef, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import {
   getMovieCatalogStats,
   getMovieDetail,
@@ -12,6 +12,7 @@ import type {
   MovieListItem,
   MovieReviewOut,
 } from "../types/movies";
+import type { CatalogNavigationState } from "../types/navigation";
 import { normalizeTitle } from "../utils/text";
 import { translateGenre } from "../constants/genreLabels";
 import { PosterImage } from "../components/PosterImage";
@@ -24,23 +25,33 @@ interface MoviesListProps {
 }
 
 export function MoviesList({ searchValue }: MoviesListProps) {
+  const location = useLocation();
+  const catalogReturn = (location.state as CatalogNavigationState | null)
+    ?.catalogReturn;
   const [items, setItems] = useState<MovieListItem[]>([]);
   const [total, setTotal] = useState(0);
   const [pages, setPages] = useState(0);
-  const [page, setPage] = useState(1);
-  const [titulo, setTitulo] = useState("");
+  const [page, setPage] = useState(catalogReturn?.page ?? 1);
+  const [titulo, setTitulo] = useState(catalogReturn?.titulo ?? searchValue);
+  const tituloRef = useRef(titulo);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeGenre, setActiveGenre] = useState("Todos");
+  const [activeGenre, setActiveGenre] = useState(
+    catalogReturn?.activeGenre ?? "Todos",
+  );
   const [selectedMovie, setSelectedMovie] = useState<MovieListItem | null>(null);
   const [movieDetail, setMovieDetail] = useState<MovieDetail | null>(null);
   const [catalogStats, setCatalogStats] = useState<MovieCatalogStats | null>(null);
   const [recentReviews, setRecentReviews] = useState<
     (MovieReviewOut & { movieTitle: string; movieId: string })[]
   >([]);
+  const scrollRestored = useRef(false);
 
   useEffect(() => {
+    if (searchValue === tituloRef.current) return;
+
     const timeout = setTimeout(() => {
+      tituloRef.current = searchValue;
       setTitulo(searchValue);
       setPage(1);
     }, 400);
@@ -61,6 +72,12 @@ export function MoviesList({ searchValue }: MoviesListProps) {
       .catch(() => setError("Não foi possível carregar os filmes."))
       .finally(() => setLoading(false));
   }, [page, titulo]);
+
+  useEffect(() => {
+    if (loading || scrollRestored.current || catalogReturn === undefined) return;
+    scrollRestored.current = true;
+    window.scrollTo(0, catalogReturn.scrollY);
+  }, [catalogReturn, loading]);
 
   useEffect(() => {
     getMovieCatalogStats().then(setCatalogStats).catch(() => setCatalogStats(null));
@@ -396,6 +413,14 @@ export function MoviesList({ searchValue }: MoviesListProps) {
               <Link
                 className="primary-button modal-details-link"
                 to={`/movies/${selectedMovie.sk_movie_id}`}
+                state={{
+                  catalogReturn: {
+                    page,
+                    titulo,
+                    activeGenre,
+                    scrollY: window.scrollY,
+                  },
+                } satisfies CatalogNavigationState}
               >
                 Abrir página completa <span aria-hidden="true">↗</span>
               </Link>
