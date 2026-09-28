@@ -1,5 +1,6 @@
 """Consultas de leitura e escrita do domínio de filmes."""
 
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 from sqlalchemy import func, select
@@ -7,7 +8,13 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.movies.models import DimGenre, DimMovie, DimPerson, MovieReview
+from app.movies.models import (
+    DimGenre,
+    DimMovie,
+    DimPerson,
+    MovieReview,
+    bridge_movie_genre,
+)
 from app.movies.schemas import (
     MovieCreate,
     MovieDetail,
@@ -17,6 +24,9 @@ from app.movies.schemas import (
     OutrasNotas,
     PaginatedMovies,
     PaginatedReviews,
+    GenrePopularity,
+    MovieCatalogStats,
+    WeeklyMovieRanking,
 )
 
 
@@ -86,6 +96,84 @@ async def list_movies(
 
     pages = (total + page_size - 1) // page_size if total else 0
     return PaginatedMovies(items=items, total=total, page=page, page_size=page_size, pages=pages)
+
+async def get_movie_catalog_stats(db: AsyncSession) -> MovieCatalogStats:
+    """Agrega indicadores do catálogo inteiro sem carregar os filmes na aplicação."""
+
+    review_averages = (
+        select(
+            MovieReview.sk_movie_id.label("sk_movie_id"),
+            func.avg(MovieReview.nota).label("nota_media"),
+        )
+        .group_by(MovieReview.sk_movie_id)
+        .subquery()
+    )
+    total_movies = (await db.execute(select(func.count()).select_from(DimMovie))).scalar_one()
+    total_genres = (await db.execute(select(func.count()).select_from(DimGenre))).scalar_one()
+    review_stats = (
+        await db.execute(
+            select(func.count(), func.avg(review_averages.c.nota_media)).select_from(
+                review_averages
+            )
+        )
+    ).one()
+
+    genre_rows = (
+        await db.execute(
+            select(DimGenre.nome_genero, func.count(bridge_movie_genre.c.sk_movie_id))
+            .select_from(DimGenre)
+            .outerjoin(
+                bridge_movie_genre,
+                DimGenre.sk_genre_id == bridge_movie_genre.c.sk_genre_id,
+            )
+            .group_by(DimGenre.sk_genre_id, DimGenre.nome_genero)
+            .order_by(func.count(bridge_movie_genre.c.sk_movie_id).desc(), DimGenre.nome_genero)
+            .limit(4)
+        )
+    ).all()
+
+    week_start = datetime.now(UTC).replace(tzinfo=None) - timedelta(days=7)
+    weekly_rows = (
+        await db.execute(
+            select(
+                DimMovie.sk_movie_id,
+                DimMovie.titulo,
+                DimMovie.ano_lancamento,
+                func.count(MovieReview.sk_movie_review_id).label("qtd_avaliacoes"),
+                func.avg(MovieReview.nota).label("nota_media"),
+            )
+            .join(MovieReview, MovieReview.sk_movie_id == DimMovie.sk_movie_id)
+            .where(MovieReview.created_at >= week_start)
+            .group_by(DimMovie.sk_movie_id, DimMovie.titulo, DimMovie.ano_lancamento)
+            .order_by(
+                func.count(MovieReview.sk_movie_review_id).desc(),
+                func.avg(MovieReview.nota).desc(),
+                DimMovie.titulo,
+            )
+            .limit(4)
+        )
+    ).all()
+
+    return MovieCatalogStats(
+        total_filmes=total_movies,
+        total_generos=total_genres,
+        filmes_avaliados=review_stats[0],
+        nota_media=round(review_stats[1], 1) if review_stats[1] is not None else None,
+        generos_populares=[
+            GenrePopularity(nome_genero=genre_name, qtd_filmes=movie_count)
+            for genre_name, movie_count in genre_rows
+        ],
+        ranking_semanal=[
+            WeeklyMovieRanking(
+                sk_movie_id=movie_id,
+                titulo=title,
+                ano_lancamento=release_year,
+                qtd_avaliacoes_semana=review_count,
+                nota_media_semana=round(average, 1),
+            )
+            for movie_id, title, release_year, review_count, average in weekly_rows
+        ],
+    )
 
 
 async def get_movie_detail(db: AsyncSession, sk_movie_id: str) -> MovieDetail | None:

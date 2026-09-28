@@ -6,6 +6,7 @@ import type {
   MovieReviewCreate,
   MovieReviewOut,
   MovieCreate,
+  MovieCatalogStats,
 } from "../types/movies";
 
 export async function listMovies(
@@ -16,6 +17,11 @@ export async function listMovies(
   const response = await apiClient.get<PaginatedMovies>("/movies", {
     params: { page, page_size: pageSize, ...(titulo ? { titulo } : {}) },
   });
+  return response.data;
+}
+
+export async function getMovieCatalogStats(): Promise<MovieCatalogStats> {
+  const response = await apiClient.get<MovieCatalogStats>("/movies/stats");
   return response.data;
 }
 

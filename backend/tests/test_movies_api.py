@@ -6,6 +6,47 @@ from app.movies.models import DimGenre
 async def test_get_movie_not_found(client):
     assert (await client.get("/api/v1/movies/nao-existe")).status_code == 404
 
+async def test_catalog_stats_aggregate_all_movies_and_recent_reviews(client, db_session):
+    drama = await _create_genre(db_session, "Drama")
+    comedy = await _create_genre(db_session, "Comédia")
+    first = await client.post(
+        "/api/v1/movies",
+        json={"titulo": "Filme A", "ano_lancamento": 2020, "generos": [drama.sk_genre_id]},
+    )
+    second = await client.post(
+        "/api/v1/movies",
+        json={
+            "titulo": "Filme B",
+            "ano_lancamento": 2021,
+            "generos": [drama.sk_genre_id, comedy.sk_genre_id],
+        },
+    )
+    await client.post(
+        f"/api/v1/movies/{first.json()['sk_movie_id']}/reviews",
+        json={"nome": "A", "nota": 8, "comentario": "Boa"},
+    )
+    await client.post(
+        f"/api/v1/movies/{second.json()['sk_movie_id']}/reviews",
+        json={"nome": "B", "nota": 6, "comentario": "Boa"},
+    )
+
+    response = await client.get("/api/v1/movies/stats")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["total_filmes"] == 2
+    assert body["total_generos"] == 2
+    assert body["filmes_avaliados"] == 2
+    assert body["nota_media"] == 7.0
+    assert body["generos_populares"] == [
+        {"nome_genero": "Drama", "qtd_filmes": 2},
+        {"nome_genero": "Comédia", "qtd_filmes": 1},
+    ]
+    assert [movie["titulo"] for movie in body["ranking_semanal"]] == [
+        "Filme A",
+        "Filme B",
+    ]
+
 
 async def test_post_review_movie_not_found(client):
     response = await client.post(

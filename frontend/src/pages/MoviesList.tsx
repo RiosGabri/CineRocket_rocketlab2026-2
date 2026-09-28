@@ -1,7 +1,17 @@
 import { startTransition, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getMovieDetail, listMovieReviews, listMovies } from "../api/movies";
-import type { MovieDetail, MovieListItem, MovieReviewOut } from "../types/movies";
+import {
+  getMovieCatalogStats,
+  getMovieDetail,
+  listMovieReviews,
+  listMovies,
+} from "../api/movies";
+import type {
+  MovieCatalogStats,
+  MovieDetail,
+  MovieListItem,
+  MovieReviewOut,
+} from "../types/movies";
 import { normalizeTitle } from "../utils/text";
 import { translateGenre } from "../constants/genreLabels";
 import { PosterImage } from "../components/PosterImage";
@@ -24,11 +34,9 @@ export function MoviesList({ searchValue }: MoviesListProps) {
   const [activeGenre, setActiveGenre] = useState("Todos");
   const [selectedMovie, setSelectedMovie] = useState<MovieListItem | null>(null);
   const [movieDetail, setMovieDetail] = useState<MovieDetail | null>(null);
+  const [catalogStats, setCatalogStats] = useState<MovieCatalogStats | null>(null);
   const [recentReviews, setRecentReviews] = useState<
     (MovieReviewOut & { movieTitle: string; movieId: string })[]
-  >([]);
-  const [weeklyRanking, setWeeklyRanking] = useState<
-    { movie: MovieListItem; count: number; average: number }[]
   >([]);
 
   useEffect(() => {
@@ -55,10 +63,19 @@ export function MoviesList({ searchValue }: MoviesListProps) {
   }, [page, titulo]);
 
   useEffect(() => {
-    const candidates = [...items]
+    getMovieCatalogStats().then(setCatalogStats).catch(() => setCatalogStats(null));
+  }, []);
+
+  useEffect(() => {
+    const visibleItems =
+      activeGenre === "Todos"
+        ? items
+        : items.filter((movie) => movie.generos.includes(activeGenre));
+    const candidates = visibleItems
       .filter((movie) => movie.qtd_avaliacoes > 0)
       .slice(0, PAGE_SIZE);
 
+    let current = true;
     Promise.all(
       candidates.map(async (movie) => {
         try {
@@ -69,6 +86,7 @@ export function MoviesList({ searchValue }: MoviesListProps) {
         }
       }),
     ).then((reviewGroups) => {
+      if (!current) return;
       const reviews = reviewGroups.flatMap(({ movie, reviews: movieReviews }) =>
         movieReviews.map((review) => ({
           ...review,
@@ -76,8 +94,6 @@ export function MoviesList({ searchValue }: MoviesListProps) {
           movieId: movie.sk_movie_id,
         })),
       );
-      const weekStart = Date.now() - 7 * 24 * 60 * 60 * 1000;
-
       setRecentReviews(
         reviews
           .sort(
@@ -86,27 +102,11 @@ export function MoviesList({ searchValue }: MoviesListProps) {
           )
           .slice(0, 3),
       );
-      setWeeklyRanking(
-        reviewGroups
-          .map(({ movie, reviews: movieReviews }) => {
-            const reviewsThisWeek = movieReviews.filter(
-              (review) => new Date(review.created_at).getTime() >= weekStart,
-            );
-            return {
-              movie,
-              count: reviewsThisWeek.length,
-              average: reviewsThisWeek.length
-                ? reviewsThisWeek.reduce((sum, review) => sum + review.nota, 0) /
-                  reviewsThisWeek.length
-                : 0,
-            };
-          })
-          .filter(({ count }) => count > 0)
-          .sort((a, b) => b.count - a.count || b.average - a.average)
-          .slice(0, 4),
-      );
     });
-  }, [items]);
+    return () => {
+      current = false;
+    };
+  }, [items, activeGenre]);
 
   useEffect(() => {
     if (!selectedMovie) return;
@@ -139,19 +139,11 @@ export function MoviesList({ searchValue }: MoviesListProps) {
     activeGenre === "Todos"
       ? items
       : items.filter((movie) => movie.generos.includes(activeGenre));
-  const ratedMovies = items.filter((movie) => movie.nota_media != null);
-  const averageRating = ratedMovies.length
-    ? ratedMovies.reduce((sum, movie) => sum + (movie.nota_media ?? 0), 0) /
-      ratedMovies.length
-    : null;
-  const favoriteGenres = [...new Set(items.flatMap((movie) => movie.generos))]
-    .map((genre) => ({
-      genre,
-      count: items.filter((movie) => movie.generos.includes(genre)).length,
-    }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 4);
-  const maxGenreCount = Math.max(1, ...favoriteGenres.map(({ count }) => count));
+  const favoriteGenres = catalogStats?.generos_populares ?? [];
+  const maxGenreCount = Math.max(
+    1,
+    ...favoriteGenres.map(({ qtd_filmes }) => qtd_filmes),
+  );
   const featuredMovie = items.find((movie) => movie.url_poster) ?? items[0];
   const visibleMovieDetail =
     selectedMovie && movieDetail?.sk_movie_id === selectedMovie.sk_movie_id
@@ -277,7 +269,7 @@ export function MoviesList({ searchValue }: MoviesListProps) {
                 <div className="section-heading compact-heading">
                   <div>
                     <span className="eyebrow">VOZES DA COMUNIDADE</span>
-                    <h2>Críticas recentes</h2>
+                    <h2>Críticas da página</h2>
                   </div>
                 </div>
                 {recentReviews.length > 0 ? (
@@ -294,7 +286,7 @@ export function MoviesList({ searchValue }: MoviesListProps) {
                     ))}
                   </div>
                 ) : (
-                  <p className="empty-reviews">As primeiras críticas da comunidade aparecem aqui.</p>
+                  <p className="empty-reviews">Nenhuma crítica nos filmes desta página.</p>
                 )}
               </section>
             </div>
@@ -309,17 +301,18 @@ export function MoviesList({ searchValue }: MoviesListProps) {
                   <span className="panel-icon" aria-hidden="true">↗</span>
                 </div>
                 <ol className="ranking-list">
-                  {weeklyRanking.map(({ movie, count, average }, index) => (
+                  {catalogStats?.ranking_semanal.map((movie, index) => (
                     <li key={movie.sk_movie_id}>
                       <span className="ranking-position">0{index + 1}</span>
                       <div className="ranking-copy">
                         <strong>{normalizeTitle(movie.titulo)}</strong>
-                        <span>{count} {count === 1 ? "crítica" : "críticas"} nesta semana</span>
+                        <span>{movie.qtd_avaliacoes_semana} {movie.qtd_avaliacoes_semana === 1 ? "crítica" : "críticas"} nesta semana</span>
                       </div>
-                      <span className="ranking-score">★ {average.toFixed(1)}</span>
+                      <span className="ranking-score">★ {movie.nota_media_semana.toFixed(1)}</span>
                     </li>
                   ))}
-                  {weeklyRanking.length === 0 && <li className="sidebar-empty">Sem novas avaliações nos últimos 7 dias.</li>}
+                  {catalogStats && catalogStats.ranking_semanal.length === 0 && <li className="sidebar-empty">Sem novas avaliações nos últimos 7 dias.</li>}
+                  {!catalogStats && <li className="sidebar-empty">Carregando ranking...</li>}
                 </ol>
                 <p className="ranking-note">Ordenado por volume de críticas; nota média como desempate.</p>
               </section>
@@ -333,20 +326,20 @@ export function MoviesList({ searchValue }: MoviesListProps) {
                 </div>
                 <div className="stats-grid">
                   <div className="stat-cell">
-                    <strong>{total}</strong>
+                    <strong>{catalogStats?.total_filmes ?? "—"}</strong>
                     <span>filmes no catálogo</span>
                   </div>
                   <div className="stat-cell">
-                    <strong>{ratedMovies.length}</strong>
-                    <span>avaliados nesta página</span>
+                    <strong>{catalogStats?.filmes_avaliados ?? "—"}</strong>
+                    <span>filmes avaliados</span>
                   </div>
                   <div className="stat-cell">
-                    <strong>{averageRating?.toFixed(1) ?? "—"}</strong>
+                    <strong>{catalogStats?.nota_media?.toFixed(1) ?? "—"}</strong>
                     <span>média das notas</span>
                   </div>
                   <div className="stat-cell">
-                    <strong>{favoriteGenres.length}</strong>
-                    <span>gêneros em destaque</span>
+                    <strong>{catalogStats?.total_generos ?? "—"}</strong>
+                    <span>gêneros cadastrados</span>
                   </div>
                 </div>
               </section>
@@ -359,18 +352,19 @@ export function MoviesList({ searchValue }: MoviesListProps) {
                   </div>
                 </div>
                 <div className="genre-bars">
-                  {favoriteGenres.map(({ genre, count }) => (
-                    <div className="genre-bar-row" key={genre}>
+                  {favoriteGenres.map(({ nome_genero, qtd_filmes }) => (
+                    <div className="genre-bar-row" key={nome_genero}>
                       <div className="genre-bar-label">
-                        <span>{translateGenre(genre)}</span>
-                        <span>{count}</span>
+                        <span>{translateGenre(nome_genero)}</span>
+                        <span>{qtd_filmes}</span>
                       </div>
                       <div className="genre-bar-track">
-                        <span style={{ width: `${(count / maxGenreCount) * 100}%` }} />
+                        <span style={{ width: `${(qtd_filmes / maxGenreCount) * 100}%` }} />
                       </div>
                     </div>
                   ))}
-                  {favoriteGenres.length === 0 && <p className="sidebar-empty">Gêneros aparecerão com os filmes.</p>}
+                  {catalogStats && favoriteGenres.length === 0 && <p className="sidebar-empty">Gêneros aparecerão com os filmes.</p>}
+                  {!catalogStats && <p className="sidebar-empty">Carregando gêneros...</p>}
                 </div>
               </section>
             </aside>

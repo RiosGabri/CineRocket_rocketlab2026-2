@@ -7,6 +7,7 @@ from app.db.session import get_db
 from app.movies.schemas import (
     MovieCreate,
     MovieDetail,
+        MovieCatalogStats,
     MovieReviewCreate,
     MovieReviewOut,
     PaginatedMovies,
@@ -20,6 +21,7 @@ from app.movies.service import (
     delete_movie,
     delete_movie_review,
     get_movie_detail,
+        get_movie_catalog_stats,
     list_movie_reviews,
     list_movies,
     update_movie,
@@ -56,6 +58,12 @@ async def get_movies(
     ] = None,
 ) -> PaginatedMovies:
     return await list_movies(db, page=page, page_size=page_size, titulo=titulo)
+
+@router.get("/stats", response_model=MovieCatalogStats)
+async def get_catalog_stats(
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> MovieCatalogStats:
+    return await get_movie_catalog_stats(db)
 
 
 @router.post(
