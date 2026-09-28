@@ -2,14 +2,15 @@
   max-width: 500px;
   margin: 4rem auto;
   text-align: center;
-  color: #f0f0f0;
-}
-
-.not-found-page a {
-  color: #6cb4ff;
+  color: var(--color-text);
+  padding: 0 var(--space-4);
 }
 
 .not-found-page h1 {
   line-height: 1.3;
-  margin-bottom: 0.5rem;
+  margin-bottom: var(--space-2);
+}
+
+.not-found-page a {
+  color: var(--color-accent);
 }
