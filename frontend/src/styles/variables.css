@@ -1,18 +1,18 @@
 :root {
-  --color-bg: #121212;
-  --color-bg-elevated: #1e1e1e;
-  --color-bg-input: #2a2a2a;
-  --color-border: #383838;
+  --color-bg: #f5f1eb;
+  --color-bg-elevated: #ffffff;
+  --color-bg-input: #ffffff;
+  --color-border: #ede8df;
 
-  --color-text: #f0f0f0;
-  --color-text-muted: #a0a0a0;
-  --color-text-subtle: #777;
+  --color-text: #242923;
+  --color-text-muted: #74796f;
+  --color-text-subtle: #979b92;
 
-  --color-accent: #6cb4ff;
-  --color-accent-hover: #8fc4ff;
+  --color-accent: #3d7a5c;
+  --color-accent-hover: #2f674b;
   --color-danger: #e0475a;
   --color-danger-hover: #c93e50;
-  --color-rating: #f0c14b;
+  --color-rating: #e8a830;
 
   --radius-sm: 6px;
   --radius-md: 8px;
@@ -25,9 +25,8 @@
   --space-5: 1.5rem;
   --space-6: 2rem;
 
-  --font-sans:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
-    sans-serif;
+  --font-sans: "Inter", "Segoe UI", sans-serif;
+  --font-display: "DM Serif Display", Georgia, serif;
 
   --transition-fast: 0.15s ease;
   --header-height: 64px;

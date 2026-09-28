@@ -1,4 +1,5 @@
 @import "./styles/variables.css";
+@import url("https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600;700&display=swap");
 
 * {
   box-sizing: border-box;
@@ -15,10 +16,16 @@ body {
   color: var(--color-text);
   font-family: var(--font-sans);
   min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
 }
 
 a {
   color: var(--color-accent);
+}
+
+button,
+input {
+  font: inherit;
 }
 
 button {
