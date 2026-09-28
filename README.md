@@ -133,12 +133,15 @@ para aceitar requisições dessa origem por padrão.
 ### Telas
 
 - **Catálogo** (`/`) — lista paginada de filmes, com busca por título
-  (debounce de 400ms) e link para cadastro de um novo filme.
+  (debounce de 400ms). O cabeçalho fixo, presente em todas as telas, dá
+  acesso ao catálogo e ao cadastro de um novo filme.
 - **Detalhe do filme** (`/movies/:id`) — informações completas, nota média
   dos usuários (com fallback de TMDB/IMDB quando disponíveis), listas de
   elenco/direção/roteiro/produtoras (truncadas com "ver mais" para filmes
   com muitos créditos), histórico de avaliações paginado, formulário para
-  adicionar uma nova avaliação, e ações de editar/excluir o filme.
+  adicionar uma nova avaliação (nota de 0 a 10, até 2 casas decimais),
+  edição e exclusão de cada avaliação (a nota média do filme é recalculada
+  automaticamente), e ações de editar/excluir o filme.
 - **Formulário de filme** (`/movies/new` e `/movies/:id/edit`) — mesmo
   componente para criação e edição; em modo de edição, carrega e reenvia
   sem alteração os campos que não têm entrada própria no formulário
@@ -155,3 +158,11 @@ para aceitar requisições dessa origem por padrão.
   aspas duplicadas remanescentes do dado original (normalizadas na exibição,
   mas não no banco) e os nomes de gênero fora dos 19 padrão do TMDB aparecem
   em inglês (sem tradução mapeada).
+- Não há autenticação: qualquer visitante pode editar ou excluir qualquer
+  avaliação. O enunciado não pede controle de acesso, então isso foi
+  deixado fora do escopo.
+- Editar uma avaliação não altera a data original (`created_at`) e não
+  registra que ela foi editada.
+- Cerca de 10 mil filmes do catálogo original têm `duracao_minutos = 0`
+  (dado ausente representado como zero). Ao editar esses filmes, o
+  formulário trata o zero como "sem duração" e grava `NULL`.
