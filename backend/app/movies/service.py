@@ -1,6 +1,5 @@
 """Consultas de leitura e escrita do domínio de filmes."""
 
-from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 from sqlalchemy import func, select
@@ -26,7 +25,6 @@ from app.movies.schemas import (
     PaginatedReviews,
     GenrePopularity,
     MovieCatalogStats,
-    WeeklyMovieRanking,
 )
 
 
@@ -132,28 +130,6 @@ async def get_movie_catalog_stats(db: AsyncSession) -> MovieCatalogStats:
         )
     ).all()
 
-    week_start = datetime.now(UTC).replace(tzinfo=None) - timedelta(days=7)
-    weekly_rows = (
-        await db.execute(
-            select(
-                DimMovie.sk_movie_id,
-                DimMovie.titulo,
-                DimMovie.ano_lancamento,
-                func.count(MovieReview.sk_movie_review_id).label("qtd_avaliacoes"),
-                func.avg(MovieReview.nota).label("nota_media"),
-            )
-            .join(MovieReview, MovieReview.sk_movie_id == DimMovie.sk_movie_id)
-            .where(MovieReview.created_at >= week_start)
-            .group_by(DimMovie.sk_movie_id, DimMovie.titulo, DimMovie.ano_lancamento)
-            .order_by(
-                func.count(MovieReview.sk_movie_review_id).desc(),
-                func.avg(MovieReview.nota).desc(),
-                DimMovie.titulo,
-            )
-            .limit(4)
-        )
-    ).all()
-
     return MovieCatalogStats(
         total_filmes=total_movies,
         total_generos=total_genres,
@@ -162,16 +138,6 @@ async def get_movie_catalog_stats(db: AsyncSession) -> MovieCatalogStats:
         generos_populares=[
             GenrePopularity(nome_genero=genre_name, qtd_filmes=movie_count)
             for genre_name, movie_count in genre_rows
-        ],
-        ranking_semanal=[
-            WeeklyMovieRanking(
-                sk_movie_id=movie_id,
-                titulo=title,
-                ano_lancamento=release_year,
-                qtd_avaliacoes_semana=review_count,
-                nota_media_semana=round(average, 1),
-            )
-            for movie_id, title, release_year, review_count, average in weekly_rows
         ],
     )
 

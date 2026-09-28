@@ -36,20 +36,12 @@ class GenrePopularity(BaseModel):
     nome_genero: str
     qtd_filmes: int
 
-class WeeklyMovieRanking(BaseModel):
-    sk_movie_id: str
-    titulo: str
-    ano_lancamento: int | None
-    qtd_avaliacoes_semana: int
-    nota_media_semana: float
-
 class MovieCatalogStats(BaseModel):
     total_filmes: int
     total_generos: int
     filmes_avaliados: int
     nota_media: float | None
     generos_populares: list[GenrePopularity]
-    ranking_semanal: list[WeeklyMovieRanking]
 
 
 class OutrasNotas(BaseModel):

@@ -22,13 +22,6 @@ export interface MovieCatalogStats {
   filmes_avaliados: number;
   nota_media: number | null;
   generos_populares: { nome_genero: string; qtd_filmes: number }[];
-  ranking_semanal: {
-    sk_movie_id: string;
-    titulo: string;
-    ano_lancamento: number | null;
-    qtd_avaliacoes_semana: number;
-    nota_media_semana: number;
-  }[];
 }
 
 export interface OutrasNotas {

@@ -16,7 +16,6 @@ export function Header({ searchValue, onSearchChange }: HeaderProps) {
       <nav className="header-nav" aria-label="Navegação principal">
         <a className="header-nav-link header-nav-link-active" href="#catalogo">Explorar</a>
         <a className="header-nav-link" href="#criticas">Críticas</a>
-        <a className="header-nav-link" href="#ranking">Ranking</a>
       </nav>
       <div className="header-tools">
         <label className="header-search">

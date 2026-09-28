@@ -6,7 +6,7 @@ from app.movies.models import DimGenre
 async def test_get_movie_not_found(client):
     assert (await client.get("/api/v1/movies/nao-existe")).status_code == 404
 
-async def test_catalog_stats_aggregate_all_movies_and_recent_reviews(client, db_session):
+async def test_catalog_stats_aggregate_all_movies_and_genres(client, db_session):
     drama = await _create_genre(db_session, "Drama")
     comedy = await _create_genre(db_session, "Comédia")
     first = await client.post(
@@ -42,12 +42,6 @@ async def test_catalog_stats_aggregate_all_movies_and_recent_reviews(client, db_
         {"nome_genero": "Drama", "qtd_filmes": 2},
         {"nome_genero": "Comédia", "qtd_filmes": 1},
     ]
-    assert [movie["titulo"] for movie in body["ranking_semanal"]] == [
-        "Filme A",
-        "Filme B",
-    ]
-
-
 async def test_post_review_movie_not_found(client):
     response = await client.post(
         "/api/v1/movies/nao-existe/reviews",

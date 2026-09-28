@@ -17,7 +17,7 @@ import { translateGenre } from "../constants/genreLabels";
 import { PosterImage } from "../components/PosterImage";
 import "./MoviesList.css";
 
-const PAGE_SIZE = 6;
+const PAGE_SIZE = 12;
 
 interface MoviesListProps {
   searchValue: string;
@@ -292,31 +292,6 @@ export function MoviesList({ searchValue }: MoviesListProps) {
             </div>
 
             <aside className="catalog-sidebar">
-              <section className="sidebar-panel" id="ranking">
-                <div className="panel-heading">
-                  <div>
-                    <span className="eyebrow">ÚLTIMOS 7 DIAS</span>
-                    <h2>Ranking semanal</h2>
-                  </div>
-                  <span className="panel-icon" aria-hidden="true">↗</span>
-                </div>
-                <ol className="ranking-list">
-                  {catalogStats?.ranking_semanal.map((movie, index) => (
-                    <li key={movie.sk_movie_id}>
-                      <span className="ranking-position">0{index + 1}</span>
-                      <div className="ranking-copy">
-                        <strong>{normalizeTitle(movie.titulo)}</strong>
-                        <span>{movie.qtd_avaliacoes_semana} {movie.qtd_avaliacoes_semana === 1 ? "crítica" : "críticas"} nesta semana</span>
-                      </div>
-                      <span className="ranking-score">★ {movie.nota_media_semana.toFixed(1)}</span>
-                    </li>
-                  ))}
-                  {catalogStats && catalogStats.ranking_semanal.length === 0 && <li className="sidebar-empty">Sem novas avaliações nos últimos 7 dias.</li>}
-                  {!catalogStats && <li className="sidebar-empty">Carregando ranking...</li>}
-                </ol>
-                <p className="ranking-note">Ordenado por volume de críticas; nota média como desempate.</p>
-              </section>
-
               <section className="sidebar-panel stats-panel">
                 <div className="panel-heading">
                   <div>
